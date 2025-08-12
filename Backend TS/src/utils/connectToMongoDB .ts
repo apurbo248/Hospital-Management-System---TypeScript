@@ -10,6 +10,7 @@ const MONGODB_URI = process.env.MONGODB_URI
 
 export const connectedToMongoDB = async (): Promise<void> => {
   try {
+    // Check if MONGODB_URI is defined or not ...It's so important to have this variable set
     if (!MONGODB_URI) {
   console.error("❌ MONGODB_URI is not defined in environment variables");
   process.exit(1);

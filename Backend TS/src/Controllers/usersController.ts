@@ -190,7 +190,7 @@ export const userRegister = async (req:Request, res:Response) => {
       },
     });
 
-    console.log("✅ Registered:", newUser.email);
+    console.log("✅ Registered successfully:)", newUser.name);
   } catch (error: any) {
     console.error("❌ Registration error:", error.message);
     res.status(500).json({ message: "Internal server error" });
@@ -241,9 +241,32 @@ export const userLogin = async (req:Request, res:Response) => {
       },
     });
   
-    console.log("✅ Login successful:", user.email);
+    console.log("✅ Login successful :)");
   } catch (error: any) {
     console.error("❌ Login error:", error.message);
     res.status(500).json({ message: "Internal server error" });
   }
 }
+// USER PROFILE
+export const userProfile = async (req:Request, res:Response) => {
+  try {
+    const userId = req.params.id;
+
+    // Find user by ID
+    const user = await baseUserModel.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Respond with user data (excluding password)
+    res.status(200).json({
+      user
+
+    });
+    console.log("✅ User profile fetched successfully:)");
+  } catch (error: any) {
+    console.error("❌ Error fetching user profile:", error.message);
+    res.status(500).json({ message: "Internal server error" });   
+  }
+};
+
