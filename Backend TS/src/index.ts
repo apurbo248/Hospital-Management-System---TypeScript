@@ -3,14 +3,15 @@
 import express ,{ Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import bodyparser from "body-parser";
 import { connectedToMongoDB } from "./Utils/connectToMongoDB ";
-
+import  doctorDepartmentRoutes  from "./routers/doctorDepartmentRoutes";
 
 dotenv.config();
-
+const app = express();
 
 const port : number|string = process.env.PORT || 7000;
-const app = express();
+
 
 
 app.use(cors());
@@ -20,6 +21,7 @@ app.get("/", (req:Request, res:Response): void => {
   res.send("wellcome to Hospital Management System Server :)");
 });
 
+app.use("/v1", doctorDepartmentRoutes);
 
 connectedToMongoDB()
 .then(() => {

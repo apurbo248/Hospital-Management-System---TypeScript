@@ -1,5 +1,5 @@
 import mongoose,{Schema} from "mongoose";
-import {baseUserSchema,baseUserModel} from "../Schemas/baseUserSchema.js";
+import {baseUserSchema,baseUserModel} from "../Schemas/baseUserSchema";
 
 export interface doctorSchema extends baseUserSchema {
   department_id: mongoose.Types.ObjectId[];

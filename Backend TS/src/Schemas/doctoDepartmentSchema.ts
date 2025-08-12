@@ -1,11 +1,11 @@
 import mongoose, { Schema ,Document,Model} from "mongoose";
 
-export interface departmentSchema extends Document {
+export interface doctorDepartmentSchema extends Document {
   image?: string[],
   name: string;
   description?: string;
 }
-const departmentSchema = new Schema<departmentSchema>(
+const doctorDepartmentSchema = new Schema<doctorDepartmentSchema>(
   {
     image: [
       {
@@ -20,7 +20,6 @@ const departmentSchema = new Schema<departmentSchema>(
     },
     description: {
       type: String,
-
       default: "",
     },
   },
@@ -29,5 +28,5 @@ const departmentSchema = new Schema<departmentSchema>(
   }
 );
 
-export const Department = mongoose.model<departmentSchema>("Department", departmentSchema);
+export const Doctor_Department = mongoose.model<doctorDepartmentSchema>("Doctor_Department", doctorDepartmentSchema);
 

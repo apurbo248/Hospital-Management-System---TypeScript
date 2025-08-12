@@ -1,5 +1,5 @@
 import mongoose,{Schema} from "mongoose";
-import {baseUserSchema,baseUserModel} from "../Schemas/baseUserSchema.js";
+import {baseUserSchema,baseUserModel} from "../Schemas/baseUserSchema";
 
 export interface IPatientSchema extends baseUserSchema {
   medical_history?: string;

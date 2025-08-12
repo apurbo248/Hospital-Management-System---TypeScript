@@ -1,6 +1,6 @@
-import mongoose ,{Document,Schema,Model} from "mongoose";
+import mongoose ,{Document,Schema} from "mongoose";
 
- interface IbaseUserSchema extends Document {
+export interface baseUserSchema extends Document {
   userId: string;
   name: string;
   email: string;
@@ -18,7 +18,7 @@ import mongoose ,{Document,Schema,Model} from "mongoose";
 
 const options = { discriminatorKey: "role", timestamps: true };
 
-const baseUserSchema = new Schema<IbaseUserSchema>(
+const baseUserSchema = new Schema<baseUserSchema>(
   {
     userId: {
       type: String,
@@ -96,5 +96,5 @@ const baseUserSchema = new Schema<IbaseUserSchema>(
   options
 );
 
-export const baseUserModel  = mongoose.model<IbaseUserSchema>("User", baseUserSchema);
+export const baseUserModel  = mongoose.model<baseUserSchema>("User", baseUserSchema);
 
