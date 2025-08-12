@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import bodyparser from "body-parser";
 import { connectedToMongoDB } from "./Utils/connectToMongoDB ";
 import  doctorDepartmentRoutes  from "./routers/doctorDepartmentRoutes";
+import userRoutes from "./routers/userRoutes"
 
 dotenv.config();
 const app = express();
@@ -22,6 +23,7 @@ app.get("/", (req:Request, res:Response): void => {
 });
 
 app.use("/v1", doctorDepartmentRoutes);
+app.use("/v1",userRoutes);
 
 connectedToMongoDB()
 .then(() => {
