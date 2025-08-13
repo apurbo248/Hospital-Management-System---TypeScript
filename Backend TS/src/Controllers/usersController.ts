@@ -16,8 +16,14 @@ dotenv.config();
 const JWT_SECRET : any = process.env.JWT_SECRET;
 
 type UserRole = "admin" | "doctor" | "receptionist" | "patient" | "nurse" | "pharmacist" | "lab_technician";
-interface userRegisterRequest extends Request {
+
+interface userInfoRequest extends Request<{id:string}> {
+  user: {
+    id: string;
+    role: UserRole;
+  };
   body: {
+    //For all users
     name: string;
     email: string;
     password: string;
@@ -25,22 +31,30 @@ interface userRegisterRequest extends Request {
     phone?: string;
     address?: string;
     profilePic?: string;
+    gender?: string;
+    blood_type?: string;
+    dateOfBirth?: Date;
+    emergency_contact_name?: string;
+    emergency_contact_phone?: string;
+
+    //For doctors
     specialization?: string[];
     license_number?: string;
     availability?: string[];
     consultation_fee?: number;
     experienceYears?: number;
     appointments?: string[];
-    shift?: string;
-    accessLevel?: string;
-    gender?: string;
-    blood_type?: string;
-    dateOfBirth?: Date;
-    emergency_contact_name?: string;
-    emergency_contact_phone?: string;
-    medical_history?: string;
     bio?: string;
     department_id?: string;
+
+    //For receptionists
+    shift?: string;
+    
+    //For admins
+    accessLevel?: string;
+    //For patients
+    medical_history?: string;
+    
   } ;
 }
 
@@ -54,6 +68,7 @@ interface userLoginRequest extends Request {
 export const userRegister = async (req:Request, res:Response) => {
   try {
     const {
+      // Common fields
       name,
       email,
       password,
@@ -61,22 +76,30 @@ export const userRegister = async (req:Request, res:Response) => {
       phone,
       address,
       profilePic,
+      gender,
+      blood_type,
+      dateOfBirth,
+      emergency_contact_name,
+      emergency_contact_phone,
+      // Doctor specific fields
       specialization,
       license_number,
       availability,
       consultation_fee,
       experienceYears,
       appointments,
-      shift,
-      accessLevel,
-      gender,
-      blood_type,
-      dateOfBirth,
-      emergency_contact_name,
-      emergency_contact_phone,
-      medical_history,
-      bio,
+       bio,
       department_id,
+
+      // Receptionist specific fields
+      shift,
+
+      // Admin specific fields
+      accessLevel,
+      
+      // Patient specific fields
+      medical_history,
+     
     } = req.body;
 
   
@@ -117,10 +140,10 @@ export const userRegister = async (req:Request, res:Response) => {
     const userId = await generateSequentialUserId();
 
     const baseData = {
-      userId,
+       // Common fields
       name,
       email,
-      password: hashPassword,
+      password,
       role,
       phone,
       address,
@@ -130,6 +153,7 @@ export const userRegister = async (req:Request, res:Response) => {
       dateOfBirth,
       emergency_contact_name,
       emergency_contact_phone,
+      
     };
 
     let newUser ;
@@ -139,14 +163,14 @@ export const userRegister = async (req:Request, res:Response) => {
       case "doctor":
         newUser = new Doctor({
           ...baseData,
-          department_id,
-          bio,
           specialization,
-          experienceYears,
-          appointments,
-          consultation_fee,
           license_number,
           availability,
+          consultation_fee,
+          experienceYears,
+          appointments,
+          bio,
+          department_id
         });
         break;
 
@@ -247,6 +271,37 @@ export const userLogin = async (req:Request, res:Response) => {
     res.status(500).json({ message: "Internal server error" });
   }
 }
+//ALL USER PROFILE
+export const allUserProfile = async (req:Request, res:Response) => {
+  try {
+    // Find all users
+    const users = await baseUserModel.find().select("-password");
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: "No users found" });
+    }
+ // Count users by role
+    const countsByRole = users.reduce<Record<string, number>>((acc, user) => {
+      acc[user.role] = (acc[user.role] || 0) + 1;
+      return acc;
+    }, {});
+
+    
+    // Respond with user data (excluding password)
+    res.status(200).json({   
+      totalUsers: users.length,
+      countsByRole,
+      users,
+        //code to count total users 
+
+
+      }),
+ 
+    console.log("✅ All user profiles fetched successfully :)");
+  } catch (error: any) {
+    console.error("❌ Error fetching all user profiles:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
 // USER PROFILE
 export const userProfile = async (req:Request, res:Response) => {
   try {
@@ -269,4 +324,143 @@ export const userProfile = async (req:Request, res:Response) => {
     res.status(500).json({ message: "Internal server error" });   
   }
 };
+// USER PROFILE UPDATE
+export const userProfileUpdate = async (
+  req:Request<{id:string},any,any>, 
+  res:Response) => {
+  try {
 
+      const typedReq = req as userInfoRequest;
+      const userId = typedReq.params.id;
+
+   //access restriction
+    if (typedReq.user.id !== userId && typedReq.user.role !== "receptionist" ) {
+      return res.status(403).json({ message: "Access denied. You can only update your own profile." });
+    }
+
+    const {
+         // Common fields
+      name,
+      email,
+      password,
+      role,
+      phone,
+      address,
+      profilePic,
+      gender,
+      blood_type,
+      dateOfBirth,
+      emergency_contact_name,
+      emergency_contact_phone,
+      // Doctor specific fields
+      specialization,
+      license_number,
+      availability,
+      consultation_fee,
+      experienceYears,
+      appointments,
+       bio,
+      department_id,
+
+      // Receptionist specific fields
+      shift,
+
+      // Admin specific fields
+      accessLevel,
+      
+      // Patient specific fields
+      medical_history,
+    }
+    = typedReq.body;
+
+    // Find user by ID
+    const user = await baseUserModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }     
+    // Check for duplicate email
+    const existingUser = await baseUserModel.findOne({ email, _id: { $ne: userId } });
+    if (existingUser) {   
+      return res.status(400).json({ message: "Email already in use" });
+    }
+    // Check for duplicate license number for doctors
+    if (user.role === "doctor" && license_number) {
+      const existingLicense = await baseUserModel.findOne({
+        license_number: { $regex: new RegExp(`^${license_number}$`, "i") },
+        _id: { $ne: userId },
+      });
+      if (existingLicense) {
+        return res.status(400).json({ message: "License number already exists" });
+      }
+    }
+    // Prepare update data
+    const updateData: any = {
+         // Common fields
+      name,
+      email,
+      password,
+      role,
+      phone,
+      address,
+      profilePic,
+      gender,
+      blood_type,
+      dateOfBirth,
+      emergency_contact_name,
+      emergency_contact_phone,
+      
+    }; 
+     if (password) {
+      updateData.password = await bcrypt.hash(password, 10);
+    }
+ 
+    switch (user.role) {
+      case "doctor":
+        Object.assign(updateData, {
+          specialization,
+          license_number,
+          availability,
+          consultation_fee,
+          experienceYears,
+          appointments,
+          bio,
+          department_id
+        });
+        break;
+      case "receptionist":
+        updateData.shift = shift; 
+        break;
+      case "admin":
+        updateData.accessLevel = accessLevel;
+        break;
+      case "patient":
+        updateData.medical_history = medical_history;
+        break;
+      default:
+        console.warn(`⚠ Unknown role '${user.role}', no role-specific updates applied.`);
+        break;
+    }
+    // Update user
+    const updatedUser = await baseUserModel
+    .findByIdAndUpdate(userId, updateData, { new: true })
+    .select("-password");
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    // Respond with updated user data
+    res.status(200).json({
+      message: "User profile updated successfully",
+      user: {
+        id: updatedUser._id,
+        userId: updatedUser.userId,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+      },
+    });
+    console.log("✅ User profile updated successfully :)");
+  } catch (error: any) {
+    console.error("❌ Error updating user profile:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}

@@ -29,4 +29,17 @@ export const authorizeToken = (req: Request, res: Response, next: NextFunction) 
     console.error("Token verification failed:", error);
     return res.status(400).json({ message: "Invalid token." });
   }
-}   
+} 
+
+//give access based on user role
+export const authorizeRole = (role: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user as JwtPayload;
+
+    if (!user || !role.includes(user.role)) {
+      return res.status(403).json({ message: "Access denied. Insufficient permissions." });
+    }
+
+    next();
+  };
+};
