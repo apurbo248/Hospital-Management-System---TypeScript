@@ -3,7 +3,7 @@
 import {counterModel,counterSchema} from "../Schemas/counterSchema";
 
 export const generateSequentialUserId = async () :Promise<string> => {
-  console.log(counterModel);
+  
   const counter : counterSchema| null = await counterModel.findOneAndUpdate(
     { name: "userId" },
     { $inc: { seq: 1 } },

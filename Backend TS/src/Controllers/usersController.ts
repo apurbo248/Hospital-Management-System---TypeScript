@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import {baseUserModel} from "../Schemas/baseUserSchema";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -15,6 +16,17 @@ dotenv.config();
 
 const JWT_SECRET : any = process.env.JWT_SECRET;
 
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production', 
+  sameSite: "none" as const, //sameSite: "none" as const,use it for cross-site cookies when deploying
+  maxAge: 24 * 60 * 60 * 1000, // 1 days
+}
+
+ const generateToken =(id :string)=> jwt.sign({ id }, JWT_SECRET, {
+      expiresIn: "1d", // Token valid for 30 days
+    });
+
 type UserRole = "admin" | "doctor" | "receptionist" | "patient" | "nurse" | "pharmacist" | "lab_technician";
 
 interface userInfoRequest extends Request<{id:string}> {
@@ -24,6 +36,7 @@ interface userInfoRequest extends Request<{id:string}> {
   };
   body: {
     //For all users
+    userId?: string;
     name: string;
     email: string;
     password: string;
@@ -58,17 +71,12 @@ interface userInfoRequest extends Request<{id:string}> {
   } ;
 }
 
-interface userLoginRequest extends Request {
-  body: {
-    email: string;
-    password: string;
-  };
-}
 // USER REGISTER
 export const userRegister = async (req:Request, res:Response) => {
   try {
     const {
       // Common fields
+      
       name,
       email,
       password,
@@ -139,11 +147,13 @@ export const userRegister = async (req:Request, res:Response) => {
     const hashPassword = await bcrypt.hash(password, 10);
     const userId = await generateSequentialUserId();
 
+
     const baseData = {
        // Common fields
+       userId,
       name,
       email,
-      password,
+      password:hashPassword,
       role,
       phone,
       address,
@@ -200,17 +210,19 @@ export const userRegister = async (req:Request, res:Response) => {
     if(!newUser) {
       return res.status(500).json({ message: "Failed to Registration" });  
     }
+     
     // Save the new user
     await newUser.save();
+
+   
+    const token = generateToken((newUser._id as mongoose.Types.ObjectId).toString());
+     res.cookie("token", token, COOKIE_OPTIONS);
 
     res.status(201).json({
       message: "User registered successfully",
       user: {
         id: newUser._id,
         userId: newUser.userId,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
       },
     });
 
@@ -247,21 +259,18 @@ export const userLogin = async (req:Request, res:Response) => {
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials !!! Try Again..." });
     }
-    // Generate JWT token
-    const token = jwt.sign({ id:user._id ,role:user.role}, JWT_SECRET, {
-      expiresIn: "30d", // Token valid for 30 days
-    });
+  
+   
+const token = generateToken((user._id as mongoose.Types.ObjectId).toString());
+    res.cookie("token", token, COOKIE_OPTIONS);
 
-    // Respond with user data (excluding password)
+   
     res.status(200).json({
       message: "Login successful",
-       token: `Bearer ${token}`,
+      token,
       user: {
         id: user._id,
-        userId: user.userId,
-        name: user.name,
-        email: user.email,
-        role: user.role,
+        userId: user.userId,     
       },
     });
   
@@ -291,7 +300,7 @@ export const allUserProfile = async (req:Request, res:Response) => {
       totalUsers: users.length,
       countsByRole,
       users,
-        //code to count total users 
+        
 
 
       }),
@@ -303,7 +312,7 @@ export const allUserProfile = async (req:Request, res:Response) => {
   }
 }
 // USER PROFILE
-export const userProfile = async (req:Request, res:Response) => {
+export const individualUserProfile = async (req:Request, res:Response) => {
   try {
     const userId = req.params.id;
 
@@ -464,3 +473,22 @@ export const userProfileUpdate = async (
     res.status(500).json({ message: "Internal server error" });
   }
 }
+export const getCurrentUser = async (req: Request, res: Response) => {
+  try {
+    const token = req.cookies.token;
+    if (!token) return res.status(401).json({ message: "Not authenticated" });
+
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
+    const user = await baseUserModel.findById(decoded.id).select("-password");
+    
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json(user,{ messege: "User fetched successfully" });
+  } catch {
+    res.status(401).json({ message: "Invalid token" });
+  }
+};
+export const logoutUser = (req: Request, res: Response) => {
+  res.clearCookie("token", COOKIE_OPTIONS);
+  res.json({ message: "Logged out successfully" });
+};
