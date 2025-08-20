@@ -9,12 +9,14 @@ interface NavLink {
   icon?: React.ReactNode;
 }
 
-const navLinks: NavLink[] = [
-  { label: "Home", href: "/", icon: <Home size={18} /> },
-  { label: "Find a Doctor", href: "/doctors", icon: <Stethoscope size={18} /> },
-  { label: "Book Appointment", href: "/appointments", icon: <CalendarDays size={18} /> },
-  { label: "Services", href: "/services", icon: <Pill size={18} /> },
-  { label: "Contact", href: "/contact", icon: <Phone size={18} /> },
+const leftLinks: NavLink[] = [
+  { label: "Discover Heaven", href: "/"  },
+  { label: "Health Library", href: "/health_library",  },
+];
+
+const rightLinks: NavLink[] = [
+  { label: "Medical Services", href: "/medical_services",  },
+  { label: "Contact Us", href: "/contact_us", icon: <Phone size={18} /> },
 ];
 
 const Navbar = (): React.ReactNode => {
@@ -25,13 +27,34 @@ const Navbar = (): React.ReactNode => {
   return (
     <nav className="bg-white shadow-md fixed w-full z-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          {/* Logo */}
-          <a href="/" className="text-xl font-bold text-blue-700">CityCare Hospital</a>
+        <div className="flex justify-between h-28 items-center">
+          
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex space-x-6 items-center">
-            {navLinks.map((link) => (
+           {/* Left Nav */}
+          <div className="hidden md:flex  items-center">
+            {leftLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+               className="px-4 py-2 flex items-center gap-1 text-gray-700 hover:text-blue-600 transition-all duration-300 transform hover:scale-105"
+              >
+                {link.icon} {link.label}
+              </a>
+            ))}
+          </div>
+
+          {/* The Heaven - Big Icon Center */}
+          <a
+            href="/"
+            className="text-2xl font-extrabold text tracking-wide hover:scale-110 transition-transform"
+          >w
+            🌟 The Heaven 🌟
+          </a>
+
+          {/* Right Nav */}
+          <div className="hidden md:flex  items-center">
+            {rightLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
@@ -43,7 +66,7 @@ const Navbar = (): React.ReactNode => {
           </div>
 
           {/* Desktop Auth Buttons */}
-          <div className="hidden md:flex space-x-4">
+          {/* <div className="hidden md:flex space-x-4">
             <button
               onClick={() => setShowLogin(true)}
               className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 flex items-center gap-1"
@@ -56,7 +79,7 @@ const Navbar = (): React.ReactNode => {
             >
               Sign Up
             </button>
-          </div>
+          </div> */}
 
           {/* Mobile Menu Button */}
           <div className="md:hidden">
@@ -68,10 +91,10 @@ const Navbar = (): React.ReactNode => {
       </div>
 
       {/* Mobile Menu */}
-      {isOpen && (
+     {isOpen && (
         <div className="md:hidden bg-white shadow-md animate-slide-down">
           <div className="space-y-2 px-4 py-3">
-            {navLinks.map((link) => (
+            {leftLinks.concat(rightLinks).map((link) => (
               <a
                 key={link.href}
                 href={link.href}
@@ -81,6 +104,14 @@ const Navbar = (): React.ReactNode => {
                 {link.icon} {link.label}
               </a>
             ))}
+            {/* The Heaven center in mobile too */}
+            <a
+              href="/"
+              onClick={() => setIsOpen(false)}
+              className="block text-center text-xl font-bold text-blue-600 py-2"
+            >
+              🌟 The Heaven 🌟
+            </a>
             <button
               onClick={() => { setShowLogin(true); setIsOpen(false); }}
               className="w-full text-left px-4 py-2 border border-blue-600 text-blue-600 rounded-lg"

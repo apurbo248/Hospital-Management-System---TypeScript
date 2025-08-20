@@ -70,7 +70,6 @@ interface userInfoRequest extends Request<{id:string}> {
     
   } ;
 }
-
 // USER REGISTER
 export const userRegister = async (req:Request, res:Response) => {
   try {
@@ -93,9 +92,10 @@ export const userRegister = async (req:Request, res:Response) => {
       specialization,
       license_number,
       availability,
+      language,
       consultation_fee,
       experienceYears,
-      appointments,
+     
        bio,
       department_id,
 
@@ -175,10 +175,17 @@ export const userRegister = async (req:Request, res:Response) => {
           ...baseData,
           specialization,
           license_number,
-          availability,
+          language,
+          availability:availability?.map((day: any) => ({
+            day : day.day,
+            status: day.status,
+            timeSlots: (day.timeSlots || []).map((slot: any) => ({
+              start: slot.start,
+              end: slot.end,
+             })),
+          })),  
           consultation_fee,
-          experienceYears,
-          appointments,
+          experienceYears,      
           bio,
           department_id
         });
@@ -294,11 +301,18 @@ export const allUserProfile = async (req:Request, res:Response) => {
       return acc;
     }, {});
 
+      // Group users by role
+    const usersByRole = users.reduce<Record<string, any[]>>((acc, user) => {
+      if (!acc[user.role]) acc[user.role] = [];
+      acc[user.role].push(user);
+      return acc;
+    }, {});
     
     // Respond with user data (excluding password)
     res.status(200).json({   
       totalUsers: users.length,
       countsByRole,
+      usersByRole, 
       users,
         
 
@@ -483,11 +497,44 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    res.json(user,{ messege: "User fetched successfully" });
+    res.status(200).json({
+      user,
+      message: "User fetched successfully",
+    });
   } catch {
     res.status(401).json({ message: "Invalid token" });
   }
 };
+//GET USER BY ROLE
+export const getUsersByRole = async (req: Request, res: Response) => {
+  try {
+    const { role } = req.params; // role passed in URL e.g. /users/doctor
+
+    if (!role) {
+      return res.status(400).json({ message: "Role is required" });
+    }
+
+    // Query users with that role
+    const users = await baseUserModel.find({ role }).select("-password");
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: `No users found with role: ${role}` });
+    }
+
+    res.status(200).json({
+      role,
+      total: users.length,
+      users,
+    });
+
+    console.log(`✅ Users with role ${role} fetched successfully :)`);
+  } catch (error: any) {
+    console.error("❌ Error fetching users by role:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 export const logoutUser = (req: Request, res: Response) => {
   res.clearCookie("token", COOKIE_OPTIONS);
   res.json({ message: "Logged out successfully" });
